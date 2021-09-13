@@ -1,4 +1,26 @@
-FROM openjdk:8-jdk-alpine
-ENV MYSQL_ENDPOINT=jdbc:mysql://root:toor@host.docker.internal:3306/telemetry
-COPY build/libs/iota-0.0.1-SNAPSHOT.jar iota.jar
-ENTRYPOINT ["java", "-jar", "iota.jar"]
+services:
+  web:
+    build: .
+    container_name: iota
+    ports:
+      - 8080:8080
+    environment:
+      - TELEMETRY_LOGGING_INTERVAL_READ=1
+      - TELEMETRY_LOGGING_INTERVAL_WRITE=10
+      - TELEMETRY_REPORTING_INTERVAL_WRITE=20
+      - TELEMETRY_REPORTING_THRESHOLD_TEMPERATURE=100
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: mysql:latest
+    container_name: mysql
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=toor
+      - MYSQL_DATABASE=telemetry
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 3s
+      retries: 10
